@@ -25,6 +25,7 @@ type hardSlot[T any] struct {
 
 	ctx    context.Context
 	cancel context.CancelFunc
+	closed bool
 }
 
 func newHardSlot[T any](n int) (slot[T], <-chan T) {
@@ -38,7 +39,7 @@ func newHardSlot[T any](n int) (slot[T], <-chan T) {
 func (s *hardSlot[T]) Dispatch(ctx context.Context, v T) (int, error) {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
-	if ctx.Err() != nil {
+	if s.closed {
 		return 0, io.EOF
 	}
 
@@ -49,6 +50,10 @@ func (s *hardSlot[T]) Dispatch(ctx context.Context, v T) (int, error) {
 		return 0, io.EOF
 	case s.c <- v:
 		return 1, nil
+	default:
+		s.cancel()
+		go s.Close()
+		return 0, io.EOF
 	}
 }
 
@@ -57,7 +62,12 @@ func (s *hardSlot[T]) Close() error {
 
 	s.rw.Lock()
 	defer s.rw.Unlock()
+
+	if s.closed {
+		return nil
+	}
 	close(s.c)
+	s.closed = true
 
 	return nil
 }

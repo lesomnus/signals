@@ -2,7 +2,6 @@ package signals
 
 import (
 	"context"
-	"io"
 	"sync/atomic"
 )
 
@@ -31,10 +30,6 @@ func newSoftSlot[T any](n int) (slot[T], <-chan T) {
 }
 
 func (s *softSlot[T]) Dispatch(ctx context.Context, v T) (int, error) {
-	if s.is_closed.Load() {
-		return 0, io.EOF
-	}
-
 	select {
 	case <-ctx.Done():
 		return 0, ctx.Err()
