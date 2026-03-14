@@ -2,7 +2,6 @@ package signals
 
 import (
 	"context"
-	"io"
 	"sync/atomic"
 )
 
@@ -37,7 +36,7 @@ func (s *sureSlot[T]) Dispatch(ctx context.Context, v T) (int, error) {
 	case <-ctx.Done():
 		return 0, ctx.Err()
 	case <-s.ctx.Done():
-		return 0, io.EOF
+		return 0, eof
 	case s.c <- v:
 		return 1, nil
 	}

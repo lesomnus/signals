@@ -2,7 +2,6 @@ package signals
 
 import (
 	"context"
-	"io"
 	"sync"
 	"sync/atomic"
 )
@@ -40,20 +39,20 @@ func (s *hardSlot[T]) Dispatch(ctx context.Context, v T) (int, error) {
 	s.rw.RLock()
 	defer s.rw.RUnlock()
 	if s.closed {
-		return 0, io.EOF
+		return 0, eof
 	}
 
 	select {
 	case <-ctx.Done():
 		return 0, ctx.Err()
 	case <-s.ctx.Done():
-		return 0, io.EOF
+		return 0, eof
 	case s.c <- v:
 		return 1, nil
 	default:
 		s.cancel()
 		go s.Close()
-		return 0, io.EOF
+		return 0, eof
 	}
 }
 

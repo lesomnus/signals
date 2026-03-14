@@ -2,7 +2,6 @@ package signals
 
 import (
 	"context"
-	"errors"
 	"io"
 	"sync/atomic"
 )
@@ -18,7 +17,8 @@ type Dispatcher[T any] interface {
 
 type Subscriber[T any] interface {
 	// Subscribe returns a channel that receives dispatched values and a function to close the subscription.
-	// For Sure and Sort, closing a subscription does not close the channel so channel must be selected with a context cancellation or other channel to avoid deadlock.
+	// For Sure and Soft, closing a subscription does not close the channel, so the channel must be selected
+	// with a context cancellation or another channel to avoid deadlock.
 	// For Hard, closing a subscription will close the channel and make the subscriber stop receiving values.
 	// Use [Recv] to receive values from the channel with context for convenience.
 	Subscribe(n int) (<-chan T, func() error)
@@ -41,9 +41,6 @@ func (s *signal[T]) Dispatch(ctx context.Context, v T) (int, error) {
 		count += n
 
 		if err != nil {
-			if errors.Is(err, io.EOF) {
-				continue
-			}
 			return count, err
 		}
 	}
